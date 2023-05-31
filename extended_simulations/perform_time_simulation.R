@@ -40,15 +40,15 @@ perform_time_simulation_joint = function(p,K,n.vals,nCores=5){
   #                             penalize.diagonal=FALSE))['elapsed']
   #} 
   cat('GGL done \n') 
-  # Perform JoStARS
-  times.jostars = rep(0,n.p)
+  # Perform stabJGL
+  times.stabJGL = rep(0,n.p)
   for(i in 1:n.p){
-    times.jostars[i] = system.time(JoStARS::JoStARS(Y=data.sets[[i]],var.thresh = 0.05,subsample.ratio = NULL,rep.num = 20, nlambda1=20,scale=F,
+    times.stabJGL[i] = system.time(stabJGL::stabJGL(Y=data.sets[[i]],var.thresh = 0.05,subsample.ratio = NULL,rep.num = 20, nlambda1=20,scale=F,
                                                lambda1.min=0.01,lambda1.max=1, nlambda2=20,lambda2.min=0,lambda2.max = 0.1, lambda2.init = 0.01,
                                                ebic.gamma=0,verbose=F,penalize.diagonal=FALSE,parallelize = T,nCores=20))['elapsed']
     registerDoSEQ()
   }
-  cat('JoStARS done \n')
+  cat('stabJGL done \n')
   # Perform jointGHS
   registerDoParallel(nCores)
   res.list = foreach (i=1:n.p) %dopar% {
@@ -77,7 +77,7 @@ perform_time_simulation_joint = function(p,K,n.vals,nCores=5){
   cat('JGL done \n')
 
   
-  return(list(times.jostars = times.jostars,times.jointGHS=times.jointGHS, times.SSJGL=times.SSJGL, times.JGL = times.JGL, times.GGL = times.GGL))
+  return(list(times.stabJGL = times.stabJGL,times.jointGHS=times.jointGHS, times.SSJGL=times.SSJGL, times.JGL = times.JGL, times.GGL = times.GGL))
 }
 
 

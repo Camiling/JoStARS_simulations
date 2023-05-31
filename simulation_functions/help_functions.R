@@ -112,7 +112,92 @@ mutate.graph.alt = function(graph,fraction, generate.data=F, scale=T, larger.par
   return(ans)
 }
 
-mutate.graph= function(graph,fraction, generate.data=F, scale=T, larger.partialcor=F){
+mutate.graph= function(graph,fraction, generate.data=F, scale=T, larger.partialcor=F, thresh.cov=T, u=NULL, v=NULL){
+  # Mutate a given fraction of the edges of a graph. 
+  # graph is the huge.generate() object to mutate, fraction is the fraction of edges to change. 
+  # We basically direct edges
+  if(scale) prec.mat = cov2cor(graph$omega)
+  else prec.mat = graph$omega
+  prec.mat[which(abs(prec.mat)<10^(-4),arr.ind=T)]=0
+  if(scale) cov.mat = cov2cor(graph$sigma) # added this
+  else cov.mat = graph$sigma
+  adj.mat = graph$theta
+  data=graph$data
+  p = ncol(graph$omega)
+  
+  adj.mat.upper = adj.mat
+  adj.mat.upper[lower.tri(adj.mat.upper)]=0
+  diag(adj.mat.upper) =0
+  edges = which(as.matrix(adj.mat.upper)==1,arr.ind=T) # Edge pairs.
+  n.mutations = floor(nrow(edges)*fraction)
+  
+  if(fraction==1){ # added this for jointGHS
+    ans = list()
+    if(!is.null(u) & ! is.null(v)){
+      graph.new = huge.generator(nrow(data),p,graph='scale-free',verbose = F,v=v,u=u)
+    }
+    else if(larger.partialcor) graph.new = huge.generator(nrow(data),p,graph='scale-free',verbose = F,v=1,u=0.01)
+    #else graph.new = huge.generator(nrow(data),p,graph='scale-free',verbose = F,v=0.5,u=0.05)
+    else graph.new = huge.generator(nrow(data),p,graph='scale-free',verbose = F)
+    if(scale) ans$cov.mat = cov2cor(graph.new$sigma)
+    else ans$cov.mat = graph.new$sigma
+    if(scale) ans$prec.mat = cov2cor(graph.new$omega) 
+    else ans$prec.mat = graph.new$omega
+    ans$prec.mat[which(abs(ans$prec.mat)<10^(-4),arr.ind=T)]=0
+    ans$adj.mat = graph.new$theta
+    if(generate.data){
+      ans$data = mvtnorm::rmvnorm(nrow(data), mean=rep(0,ncol(data)), ans$cov.mat)
+    }
+    return(ans)
+  }
+  
+  if(n.mutations==0 | is.na(n.mutations)){
+    ans = list()
+    ans$cov.mat=cov.mat
+    ans$prec.mat = prec.mat
+    ans$adj.mat = adj.mat
+    #ans$data = data # removed: should not reuse data
+    if(generate.data){
+      ans$data = mvtnorm::rmvnorm(nrow(data), mean=rep(0,ncol(data)), ans$cov.mat)
+    }
+    return(ans)
+  }
+  
+  edges.to.change.ind = sample(1:nrow(edges),n.mutations) # We let the first index stay, then change the second one. 
+  edges.to.change = edges[edges.to.change.ind,] # n.mutations x 2
+  nodes.add = sample(1:p,n.mutations) # id of nodes to give the edges
+  for(i in 1:n.mutations){
+    tmp.prec=prec.mat
+    tmp.adj = adj.mat
+    tmp.dat = data
+    tmp.cov.mat = cov.mat
+    id.stay = edges.to.change[i,1]
+    id.remove = edges.to.change[i,2]
+    id.add=nodes.add[i]
+    # Swap prec mat elements in rows. Then cols, the order does not matter!
+    prec.mat[id.stay,id.add] = tmp.prec[id.stay,id.remove]
+    prec.mat[id.stay,id.remove] = tmp.prec[id.stay,id.add]
+    prec.mat[id.add,id.stay] = tmp.prec[id.remove,id.stay]
+    prec.mat[id.remove,id.stay] = tmp.prec[id.add,id.stay]
+    # swap adj mat rows
+    adj.mat[id.stay,id.add] = tmp.adj[id.stay,id.remove]
+    adj.mat[id.stay,id.remove] = tmp.adj[id.stay,id.add]
+    adj.mat[id.add,id.stay] = tmp.adj[id.remove,id.stay]
+    adj.mat[id.remove,id.stay] = tmp.adj[id.add,id.stay]
+  }
+  ans = list()
+  ans$cov.mat=solve(prec.mat)
+  if(thresh.cov) ans$cov.mat[which(abs(ans$cov.mat)<1e-4,arr.ind = T)] = 0
+  ans$prec.mat = prec.mat
+  ans$adj.mat = adj.mat
+  if(generate.data){
+    # Generate new data
+    ans$data = mvtnorm::rmvnorm(nrow(data), mean=rep(0,ncol(data)), ans$cov.mat)
+  }
+  return(ans)
+}
+
+mutate.graph_orig = function(graph,fraction, generate.data=F, scale=T, larger.partialcor=F){
   # Mutate a given fraction of the edges of a graph. 
   # graph is the huge.generate() object to mutate, fraction is the fraction of edges to change. 
   # We basically direct edges
@@ -268,9 +353,9 @@ matrix.distance <- function(mat1, mat2) {
 }
 
 
-print_results_JoStARS = function(obj.list,fracs.mutated,show.lambda=TRUE, include.JoStARS = TRUE, include.jointGHS=TRUE, include.glasso =TRUE, include.SSJGL=TRUE, include.JGL=TRUE, include.GGL=TRUE,show.distance=F, show.interval=F, show.sd = F, 
+print_results_stabJGL = function(obj.list,fracs.mutated,show.lambda=TRUE, include.stabJGL = TRUE, include.jointGHS=TRUE, include.glasso =TRUE, include.SSJGL=TRUE, include.JGL=TRUE, include.GGL=TRUE,show.distance=F, show.interval=F, show.sd = F, 
                              show.specificity=F, collapse.values =F ){
-  # obj is a list of objects returned by perform_JoStARS_simulation.
+  # obj is a list of objects returned by perform_stabJGL_simulation.
   # fracs.mutated is a vector of the mutated fraction in each simulation object
   # show.distance: should the matrix distance be printed?
   # show.interval: should intervals with the 2.5% and 97% quantiles be posted?
@@ -279,15 +364,15 @@ print_results_JoStARS = function(obj.list,fracs.mutated,show.lambda=TRUE, includ
   # Function for printing mean sparsities, precisions, recalls and matrix distances when several data sets were generated.
   # Note that we print the results for the different graphs on the same lines. 
   if(collapse.values){
-    print_results_JoStARS_collapsed(obj.list,fracs.mutated,show.lambda=show.lambda,include.JoStARS = include.JoStARS, include.jointGHS=include.jointGHS, include.JGL=include.JGL, include.GGL=include.GGL, include.glasso=include.glasso, include.SSJGL=include.SSJGL,
+    print_results_stabJGL_collapsed(obj.list,fracs.mutated,show.lambda=show.lambda,include.stabJGL = include.stabJGL, include.jointGHS=include.jointGHS, include.JGL=include.JGL, include.GGL=include.GGL, include.glasso=include.glasso, include.SSJGL=include.SSJGL,
                             show.distance=show.distance,show.specificity=show.specificity,show.interval=show.interval, show.sd = show.sd)
   }
   else if(show.sd==T & show.lambda==T){
-    print_results_JoStARS_show_SD_lambda(obj.list,fracs.mutated=fracs.mutated,include.JoStARS = include.JoStARS, include.jointGHS=include.jointGHS, include.JGL=include.JGL,include.GGL=include.GGL, include.glasso=include.glasso, 
+    print_results_stabJGL_show_SD_lambda(obj.list,fracs.mutated=fracs.mutated,include.stabJGL = include.stabJGL, include.jointGHS=include.jointGHS, include.JGL=include.JGL,include.GGL=include.GGL, include.glasso=include.glasso, 
                                   include.SSJGL=include.SSJGL,show.distance=show.distance, show.specificity=show.specificity)
   }
   else if(show.sd==T){
-    print_results_JoStARS_show_SD(obj.list,fracs.mutated=fracs.mutated,include.JoStARS = include.JoStARS, include.jointGHS=include.jointGHS, include.JGL=include.JGL,include.GGL=include.GGL, include.glasso=include.glasso, 
+    print_results_stabJGL_show_SD(obj.list,fracs.mutated=fracs.mutated,include.stabJGL = include.stabJGL, include.jointGHS=include.jointGHS, include.JGL=include.JGL,include.GGL=include.GGL, include.glasso=include.glasso, 
                                    include.SSJGL=include.SSJGL,show.distance=show.distance, show.specificity=show.specificity)
   }
   else{
@@ -368,8 +453,8 @@ print_results_JoStARS = function(obj.list,fracs.mutated,show.lambda=TRUE, includ
           }  
           cat(' \\\\ \n \\hline \n')         
         }
-        if(include.JoStARS){
-          cat('  & JoStARS')
+        if(include.stabJGL){
+          cat('  & stabJGL')
           if(show.lambda){
             cat('&', round(mean(obj$lambda1),3), '&',round(mean(obj$lambda2),3))
           }
@@ -459,8 +544,8 @@ print_results_JoStARS = function(obj.list,fracs.mutated,show.lambda=TRUE, includ
           } 
           cat(' \\\\ \n')
         }
-        if(include.JoStARS){
-          cat('  & JoStARS ')
+        if(include.stabJGL){
+          cat('  & stabJGL ')
           if(show.lambda){
             cat('&', round(mean(obj$lambda1),3), '&',round(mean(obj$lambda2),3))
           }
@@ -478,8 +563,8 @@ print_results_JoStARS = function(obj.list,fracs.mutated,show.lambda=TRUE, includ
   }
 }
 
-print_results_JoStARS_show_SD = function(obj.list,fracs.mutated, include.JoStARS = TRUE, include.jointGHS=TRUE, include.glasso=TRUE, include.SSJGL=TRUE, include.JGL=TRUE,include.GGL=TRUE,show.distance=F,show.specificity=F){
-  # obj is a list of objects returned by perform_JoStARS_simulation.
+print_results_stabJGL_show_SD = function(obj.list,fracs.mutated, include.stabJGL = TRUE, include.jointGHS=TRUE, include.glasso=TRUE, include.SSJGL=TRUE, include.JGL=TRUE,include.GGL=TRUE,show.distance=F,show.specificity=F){
+  # obj is a list of objects returned by perform_stabJGL_simulation.
   # fracs.mutated is a vector of the mutated fraction in each simulation object
   # show.distance: should the matrix distance be printed?
   # show.specificity: should the matrix distance be printed?
@@ -545,8 +630,8 @@ print_results_JoStARS_show_SD = function(obj.list,fracs.mutated, include.JoStARS
       }  
       cat(' \\\\ \n')
     }
-    if(include.JoStARS){
-      cat('  & JoStARS ')
+    if(include.stabJGL){
+      cat('  & stabJGL ')
       for(k in 1:K){
         cat(' && ',round(obj$mean.opt.sparsities[k],3), '(',round(sd(obj$opt.sparsities[,k]),3),')',' & ',
             round(obj$mean.precisions[k],2),'(',round(sd(obj$precisions[,k]),2),')',' & ',
@@ -559,7 +644,7 @@ print_results_JoStARS_show_SD = function(obj.list,fracs.mutated, include.JoStARS
   }
 }
 
-print_results_JoStARS_collapsed = function(obj.list,fracs.mutated,show.lambda=FALSE,include.JoStARS = TRUE, include.jointGHS=TRUE, include.glasso=TRUE, include.SSJGL=TRUE, include.JGL=TRUE,include.GGL=TRUE,show.distance=F,show.specificity=F,show.interval=F, show.sd =T){
+print_results_stabJGL_collapsed = function(obj.list,fracs.mutated,show.lambda=FALSE,include.stabJGL = TRUE, include.jointGHS=TRUE, include.glasso=TRUE, include.SSJGL=TRUE, include.JGL=TRUE,include.GGL=TRUE,show.distance=F,show.specificity=F,show.interval=F, show.sd =T){
   K = length(obj.list[[1]]$mean.opt.sparsities)
   
   # We find the average means and average sd. 
@@ -684,8 +769,8 @@ print_results_JoStARS_collapsed = function(obj.list,fracs.mutated,show.lambda=FA
       if(show.distance) cat(' & ',round(mean(colMeans(obj$matrix.distances.jointghs)),3))
       cat(' \\\\ \n')
     }
-    if(include.JoStARS){
-      cat('  & JoStARS ')
+    if(include.stabJGL){
+      cat('  & stabJGL ')
       if(show.sd){
         sep1 = c('(',round(mean(apply(obj$opt.sparsities, 2, sd)),3),') & ')
         sep2 = c('(',round(mean(apply(obj$precisions, 2, sd)),2),') & ')
@@ -711,8 +796,8 @@ print_results_JoStARS_collapsed = function(obj.list,fracs.mutated,show.lambda=FA
   }
 }
 
-print_results_JoStARS_show_SD_lambda = function(obj.list,fracs.mutated, include.JoStARS = TRUE, include.jointGHS=TRUE, include.glasso=TRUE, include.SSJGL=TRUE, include.JGL=TRUE,include.GGL=TRUE,show.distance=F,show.specificity=F){
-  # obj is a list of objects returned by perform_JoStARS_simulation.
+print_results_stabJGL_show_SD_lambda = function(obj.list,fracs.mutated, include.stabJGL = TRUE, include.jointGHS=TRUE, include.glasso=TRUE, include.SSJGL=TRUE, include.JGL=TRUE,include.GGL=TRUE,show.distance=F,show.specificity=F){
+  # obj is a list of objects returned by perform_stabJGL_simulation.
   # fracs.mutated is a vector of the mutated fraction in each simulation object
   # show.distance: should the matrix distance be printed?
   # show.specificity: should the matrix distance be printed?
@@ -783,8 +868,8 @@ print_results_JoStARS_show_SD_lambda = function(obj.list,fracs.mutated, include.
       }  
       cat(' \\\\ \n')
     }
-    if(include.JoStARS){
-      cat('  & JoStARS ')
+    if(include.stabJGL){
+      cat('  & stabJGL ')
       cat(' & ', round(obj$mean.lambda1,3),' & ',round(obj$mean.lambda2,3))
       for(k in 1:K){
         cat(paste0(' && ',round(obj$mean.opt.sparsities[k],3), ' (',round(sd(obj$opt.sparsities[,k]),3),') ',' & ',
@@ -795,6 +880,32 @@ print_results_JoStARS_show_SD_lambda = function(obj.list,fracs.mutated, include.
       }  
     }
     cat(' \\\\ \n \\hline \n')
+  }
+}
+
+print_results_stabJGL_thresh = function(obj.list,fracs.mutated, thresh.vals, show.lambda=T, show.specificity=F, show.distance=F){
+  # obj is a list of objects returned by perform_stabJGL_simulation.
+  # fracs.mutated is a vector of the mutated fraction in each simulation object
+  # show.distance: should the matrix distance be printed?
+  # show.specificity: should the matrix distance be printed?
+  # Function for printing mean sparsities, precisions, recalls and matrix distances when several data sets were generated.
+  # Note that we print the results for the different graphs on the same lines. 
+  K = length(obj.list[[1]]$mean.opt.sparsities)
+  fracs.mutated = c(fracs.mutated[1], rep(' ', length(thresh.vals)-1))
+  # Loop over each thresh
+  for (i in 1:length(obj.list)){
+    obj=obj.list[[i]]
+    cat(fracs.mutated[i])
+    cat('  & stabJGL $\\beta_1=', thresh.vals[i], '$')
+    cat(' & ', round(obj$mean.lambda1,3),' & ',round(obj$mean.lambda2,3))
+    for(k in 1:K){
+      cat(paste0(' && ',round(obj$mean.opt.sparsities[k],3), ' (',round(sd(obj$opt.sparsities[,k]),3),') ',' & ',
+                  round(obj$mean.precisions[k],2),' (',round(sd(obj$precisions[,k]),2),') ',' & ',
+                  round(obj$mean.recalls[k],2),' (',round(sd(obj$recalls[,k]),2),') '))
+      if(show.specificity)cat('&',round(obj$mean.specificities[k],2), '(',round(sd(obj$specificities[,k]),2),')') 
+      if(show.distance) cat(' & ',round(obj$mean.matrix.distances[k],3))
+    }  
+  cat(' \\\\ \n')
   }
 }
 

@@ -1,8 +1,10 @@
 rm(list=ls())
 source('simulation_functions/help_functions.R')
-#load("data/JoStARS_simulations.Rdata")
-load("extended_simulations/data/JoStARS_simulations_extended_B.Rdata")
-load("extended_simulations/data/JoStARS_simulations_extended_C.Rdata")
+#load("data/stabJGL_simulations.Rdata")
+load("extended_simulations/data/stabJGL_simulations_extended_B.Rdata")
+load("extended_simulations/data/stabJGL_simulations_extended_C.Rdata")
+library(ggplot2)
+library(dplyr)
 
 # We replace K=3 with K=2 in the below.
 
@@ -86,24 +88,23 @@ df.K.all = data.frame(precision=c(precisions.K3, precisions.K3.jgl,  precisions.
                               precisions.sd.K4, precisions.sd.K4.jgl,  precisions.sd.K4.ggl,precisions.sd.K4.ssjgl, precisions.sd.K4.jointghs, precisions.sd.K4.glasso),
                   sd.rec = c(recalls.sd.K3, recalls.sd.K3.jgl, recalls.sd.K3.ggl,recalls.sd.K3.ssjgl, recalls.sd.K3.jointghs, recalls.sd.K3.glasso,
                               recalls.sd.K4, recalls.sd.K4.jgl, recalls.sd.K4.ggl,recalls.sd.K4.ssjgl, recalls.sd.K4.jointghs, recalls.sd.K4.glasso),
-                  method = factor(rep(c(rep('JoStARS', n.points),rep('FGL',n.points),rep('GGL',n.points),rep('SSJGL',n.points),
+                  method = factor(rep(c(rep('stabJGL', n.points),rep('FGL',n.points),rep('GGL',n.points),rep('SSJGL',n.points),
                                         rep('JointGHS',n.points),rep('Glasso',n.points)),2),
-                                  levels = c('FGL', 'GGL','JoStARS','SSJGL','Glasso', 'JointGHS')),
+                                  levels = c('FGL', 'GGL','stabJGL','SSJGL','Glasso', 'JointGHS')),
                   K = factor(c(rep('K=2', n.points*6), rep('K=4', 6*n.points)),levels=c('K=2','K=4')),
                   disagreement=c(rep(perc.disagreement,12)),similarity=c(rep(perc.similarity,12)))
-
 
 
 df.K = df.K.all  %>% filter(method != 'JointGHS')
 
 
 g.prec.sd.smaller=ggplot2::ggplot(df.K, aes(y=precision, x=disagreement, group=method, colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','maroon2','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkkhaki','darkgrey'))+
   labs(x='Disagreement %')+ scale_x_continuous(breaks = perc.disagreement) + facet_wrap(~K) + ylim(0,1)+
   geom_errorbar(aes(ymin=precision-sd.prec, ymax=precision+sd.prec),width=2)+theme_bw()+ theme(legend.position='bottom',text = element_text(size = 15))
 
 g.rec.sd.smaller = ggplot2::ggplot(df.K, aes(y=recall, x=disagreement, group=method,colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','maroon2','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkkhaki','darkgrey'))+
   labs(x='Disagreement %')+ scale_x_continuous(breaks = perc.disagreement) + facet_wrap(~K)+ ylim(0,1)+
   geom_errorbar(aes(ymin=recall-sd.rec, ymax=recall+sd.rec),width=2)+ theme_bw()+theme(legend.position = "none",text = element_text(size = 15))
 
@@ -121,12 +122,12 @@ dev.off()
 df.K.red = df.K.all  %>% filter(! method %in% c('JointGHS','SSJGL'))
 
 g.prec.sd.smaller=ggplot2::ggplot(df.K.red, aes(y=precision, x=disagreement, group=method, colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkgrey'))+
   labs(x='Disagreement %')+ scale_x_continuous(breaks = perc.disagreement) + facet_wrap(~K) + ylim(0,1)+
   geom_errorbar(aes(ymin=precision-sd.prec, ymax=precision+sd.prec),width=2)+theme_bw()+ theme(legend.position='bottom',text = element_text(size = 15))
 
 g.rec.sd.smaller = ggplot2::ggplot(df.K.red, aes(y=recall, x=disagreement, group=method,colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkgrey'))+
   labs(x='Disagreement %')+ scale_x_continuous(breaks = perc.disagreement) + facet_wrap(~K)+ ylim(0,1)+
   geom_errorbar(aes(ymin=recall-sd.rec, ymax=recall+sd.rec),width=2)+ theme_bw()+theme(legend.position = "none",text = element_text(size = 15))
 
@@ -147,12 +148,12 @@ df.K = df.K.all  %>% filter(method != 'JointGHS')
 
 
 g.prec.sd.smaller=ggplot2::ggplot(df.K, aes(y=precision, x=similarity, group=method, colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','maroon2','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkkhaki','darkgrey'))+
   labs(x='Similarity%')+ scale_x_continuous(breaks = perc.similarity) + facet_wrap(~K) + ylim(0,1)+
   geom_errorbar(aes(ymin=precision-sd.prec, ymax=precision+sd.prec),width=2)+theme_bw()+ theme(legend.position='bottom',text = element_text(size = 15))
 
 g.rec.sd.smaller = ggplot2::ggplot(df.K, aes(y=recall, x=similarity, group=method,colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','maroon2','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkkhaki','darkgrey'))+
   labs(x='Similarity %')+ scale_x_continuous(breaks = perc.similarity) + facet_wrap(~K)+ ylim(0,1)+
   geom_errorbar(aes(ymin=recall-sd.rec, ymax=recall+sd.rec),width=2)+ theme_bw()+theme(legend.position = "none",text = element_text(size = 15))
 
@@ -170,12 +171,12 @@ dev.off()
 df.K.red = df.K.all  %>% filter(! method %in% c('JointGHS','SSJGL'))
 
 g.prec.sd.smaller=ggplot2::ggplot(df.K.red, aes(y=precision, x=similarity, group=method, colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkgrey'))+
   labs(x='Similarity %')+ scale_x_continuous(breaks = perc.similarity) + facet_wrap(~K) + ylim(0,1)+
   geom_errorbar(aes(ymin=precision-sd.prec, ymax=precision+sd.prec),width=2)+theme_bw()+ theme(legend.position='bottom',text = element_text(size = 15))
 
 g.rec.sd.smaller = ggplot2::ggplot(df.K.red, aes(y=recall, x=similarity, group=method,colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('olivedrab3','dodgerblue','darkorange','blueviolet'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkgrey'))+
   labs(x='Similarity %')+ scale_x_continuous(breaks = perc.similarity) + facet_wrap(~K)+ ylim(0,1)+
   geom_errorbar(aes(ymin=recall-sd.rec, ymax=recall+sd.rec),width=2)+ theme_bw()+theme(legend.position = "none",text = element_text(size = 15))
 

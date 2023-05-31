@@ -1,2 +1,2 @@
-# JoStARS_simulations
-Code for JoStARS simulation study
+# stabJGL_simulations
+Code for stabJGL simulation study
