@@ -619,11 +619,13 @@ stabJGL_simulation_one_iteration = function(n.vals,cov.matrices,prec.matrices,sc
 #' @param verbose logical indicator of printing information at each iteration
 #' @param scale should the data be scaled?
 #' @param singleVSjoint is the simulation comparing single and joint GHS?
+#' @param JGL.eBIC should the eBCIC be used for JGL instead of AIC?
 #' @return simulation results, including sparsity, precision, recall and specificity
 perform_stabJGL_simulation_orig = function(K, n.vals, p, N=100, seeds=sample(1:1000,N), nCores = 3, frac.disagreement = 0, method='symmetric', include.stabJGL=TRUE,
                                       include.jointGHS=TRUE, include.glasso=TRUE, include.SSJGL=TRUE, include.JGL = TRUE, include.GGL = TRUE, penalize.diagonal=FALSE ,
                                       verbose=TRUE, scale=TRUE, singleVSjoint=FALSE,stars.thresh = 0.05, nlambda1=20,lambda1.min=0.01,
-                                      lambda1.max=1,nlambda2=20,lambda2.min=0,lambda2.max=0.1,lambda2.init=0.01,ebic.gamma=0, u=NULL, v=NULL){
+                                      lambda1.max=1,nlambda2=20,lambda2.min=0,lambda2.max=0.1,lambda2.init=0.01,ebic.gamma=0, JGL.eBIC=F, 
+                                      u=NULL, v=NULL, retune.lambda1=F, add.noise=FALSE, noise.sd=0.1){
   
   res=list()
   # stabJGL results
@@ -745,7 +747,7 @@ perform_stabJGL_simulation_orig = function(K, n.vals, p, N=100, seeds=sample(1:1
                                      include.JGL=include.JGL,include.GGL=include.GGL, penalize.diagonal=penalize.diagonal,seed=seeds[i], 
                                      singleVSjoint,stars.thresh = stars.thresh,nlambda1=nlambda1,lambda1.min=lambda1.min,
                                      lambda1.max=lambda1.max, nlambda2=nlambda2,lambda2.min=lambda2.min,lambda2.max = lambda2.max, lambda2.init = lambda2.init, 
-                                     ebic.gamma=ebic.gamma);
+                                     ebic.gamma=ebic.gamma,JGL.eBIC=JGL.eBIC,retune.lambda1= retune.lambda1,add.noise=add.noise, noise.sd=noise.sd);
   }
   registerDoSEQ()
   
@@ -861,7 +863,7 @@ perform_stabJGL_simulation_orig = function(K, n.vals, p, N=100, seeds=sample(1:1
 
 stabJGL_simulation_one_iteration_orig = function(n.vals,cov.matrices,prec.matrices,scale,include.stabJGL, include.jointGHS, include.glasso, include.SSJGL,include.JGL, 
                                             include.GGL, penalize.diagonal,seed,singleVSjoint,stars.thresh,nlambda1,lambda1.min,lambda1.max, 
-                                            nlambda2,lambda2.min,lambda2.max, lambda2.init,ebic.gamma) {
+                                            nlambda2,lambda2.min,lambda2.max, lambda2.init,ebic.gamma,JGL.eBIC, retune.lambda1,add.noise, noise.sd) {
   y = list()
   K=length(n.vals)
   p=ncol(prec.matrices[[1]])
@@ -871,6 +873,9 @@ stabJGL_simulation_one_iteration_orig = function(n.vals,cov.matrices,prec.matric
   # Generate data. 
   for(k in 1:K){
     y[[k]] = mvtnorm::rmvnorm(n.vals[k], mean=rep(0,p), cov.matrices[[k]])
+    if(add.noise) {
+      y[[k]] = y[[k]] + mvtnorm::rmvnorm(n.vals[k], mean=rep(0,p), diag(noise.sd^2,p))
+    }
     if (scale) y[[k]] = scale(y[[k]])
     # Use graphical lasso
     if(include.glasso & !singleVSjoint){
@@ -883,7 +888,7 @@ stabJGL_simulation_one_iteration_orig = function(n.vals,cov.matrices,prec.matric
   if(include.stabJGL){
     res.full.tmp = stabJGL::stabJGL(Y=y,var.thresh = stars.thresh,subsample.ratio = NULL,rep.num = 20, nlambda1=nlambda1,scale=F,
                                     lambda1.min=lambda1.min,lambda1.max=lambda1.max, nlambda2=nlambda2,lambda2.min=lambda2.min,lambda2.max = lambda2.max, lambda2.init = lambda2.init,
-                                    ebic.gamma=ebic.gamma,verbose=F,penalize.diagonal=FALSE,parallelize = F)
+                                    ebic.gamma=ebic.gamma,verbose=F,penalize.diagonal=FALSE,parallelize = F,retune.lambda1=retune.lambda1)
     res.tmp = res.full.tmp$opt.fit
     joint.spars = res.full.tmp$opt.sparsities
     # if comparing glasso to stabJGL, force glasso to the same sparsity
@@ -911,8 +916,14 @@ stabJGL_simulation_one_iteration_orig = function(n.vals,cov.matrices,prec.matric
     ssjgl.tmp = ssjgl.tmp$thetalist[[10]]
   }
   if(include.JGL){
-    jgl.tmp = JGL_select_AIC(Y=y,penalty='fused',nlambda1=nlambda1,lambda1.min=lambda1.min,lambda1.max=lambda1.max,nlambda2=nlambda2,lambda2.min=lambda2.min,
-                             lambda2.max=lambda2.max,lambda2.init = lambda2.init,penalize.diagonal=penalize.diagonal)
+    if(JGL.eBIC){
+      jgl.tmp = JGL_select_eBIC(Y=y,penalty='fused',nlambda1=nlambda1,lambda1.min=lambda1.min,lambda1.max=lambda1.max,nlambda2=nlambda2,lambda2.min=lambda2.min,
+                                lambda2.max=lambda2.max,lambda2.init = lambda2.init,penalize.diagonal=penalize.diagonal, ebic.gamma=ebic.gamma)
+    }
+    else{
+      jgl.tmp = JGL_select_AIC(Y=y,penalty='fused',nlambda1=nlambda1,lambda1.min=lambda1.min,lambda1.max=lambda1.max,nlambda2=nlambda2,lambda2.min=lambda2.min,
+                               lambda2.max=lambda2.max,lambda2.init = lambda2.init,penalize.diagonal=penalize.diagonal)
+    }
   }
   if(include.GGL){
     ggl.tmp = JGL_select_AIC(Y=y,penalty='group',nlambda1=nlambda1,lambda1.min=lambda1.min,lambda1.max=lambda1.max,nlambda2=nlambda2,lambda2.min=lambda2.min,

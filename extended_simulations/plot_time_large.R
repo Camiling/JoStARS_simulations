@@ -56,6 +56,18 @@ ggplot2::ggplot(df.time.large.all, aes(y=time, x=p))+ labs(title=" ")+theme_bw()
   labs(y="CPU time (s)")+ scale_x_continuous(breaks = p) +scale_y_continuous(trans='log10')
 dev.off()
 
+# Also plot with different ticks
+# plot together with facet
+df.time.large.all = rbind(df.time.large,df.time.large.K3)
+df.time.large.all$K = c(rep('K=2', nrow(df.time.large)), rep('K=3', nrow(df.time.large.K3)))
+p=c(500,600,700,800,900,1000,1100,1200,1300,1400)
+
+pdf(file='extended_simulations/plots/time_stabJGL_K2_and_K3_samescale_ticks.pdf',10,5)
+ggplot2::ggplot(df.time.large.all, aes(y=time, x=p))+ labs(title=" ")+theme_bw()+theme(legend.position = 'none', text = element_text(size = 15))+
+  geom_line(colour="azure4", linewidth=1)+ facet_wrap(~K,scales = "free_x")+  
+  labs(y="CPU time (s)")+ scale_x_continuous(breaks = p) +scale_y_continuous(trans='log10', breaks=c(1,10,100,1000,10000,100000))
+dev.off()
+
 # Then plot against jointGHS ------------------------------------
 load("extended_simulations/data/time_simulations_extended_1_joint_jointGHS.Rdata")
 load("extended_simulations/data/time_simulations_extended_2_large_jointGHS.Rdata")

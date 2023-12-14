@@ -1,6 +1,10 @@
 rm(list=ls())
 source('simulation_functions/help_functions.R')
 #load("data/stabJGL_simulations.Rdata")
+load("extended_simulations/data/stabJGL_simulations_extended_B_JGLeBIC.Rdata")
+load("extended_simulations/data/stabJGL_simulations_extended_C_JGLeBIC.Rdata")
+res.K4.ebic = res.K4.1
+res.K3.ebic = res.K2.2
 load("extended_simulations/data/stabJGL_simulations_extended_B.Rdata")
 load("extended_simulations/data/stabJGL_simulations_extended_C.Rdata")
 library(ggplot2)
@@ -27,6 +31,7 @@ precisions.K3.ggl = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.precisio
 precisions.K3.ssjgl = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.precisions.ssjgl[k])))
 precisions.K3.jointghs = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.precisions.jointghs[k])))
 precisions.K3.glasso = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.precisions.glasso[k])))
+precisions.K3.ebic = unlist(lapply(res.K3.ebic, FUN = function(s) mean(s$mean.precisions.jgl[k])))
 
 recalls.K3 = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.recalls[k])))
 recalls.K3.jgl = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.recalls.jgl[k])))
@@ -34,6 +39,7 @@ recalls.K3.ggl = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.recalls.ggl
 recalls.K3.ssjgl = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.recalls.ssjgl[k])))
 recalls.K3.jointghs = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.recalls.jointghs[k])))
 recalls.K3.glasso = unlist(lapply(res.K3, FUN = function(s) mean(s$mean.recalls.glasso[k])))
+recalls.K3.ebic = unlist(lapply(res.K3.ebic, FUN = function(s) mean(s$mean.recalls.jgl[k])))
 
 precisions.K4 = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.precisions[k])))
 precisions.K4.jgl = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.precisions.jgl[k])))
@@ -41,6 +47,7 @@ precisions.K4.ggl = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.precisio
 precisions.K4.ssjgl = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.precisions.ssjgl[k])))
 precisions.K4.jointghs = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.precisions.jointghs[k])))
 precisions.K4.glasso = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.precisions.glasso[k])))
+precisions.K4.ebic = unlist(lapply(res.K4.ebic, FUN = function(s) mean(s$mean.precisions.jgl[k])))
 
 recalls.K4 = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.recalls[k])))
 recalls.K4.jgl = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.recalls.jgl[k])))
@@ -48,6 +55,8 @@ recalls.K4.ggl = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.recalls.ggl
 recalls.K4.ssjgl = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.recalls.ssjgl[k])))
 recalls.K4.jointghs = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.recalls.jointghs[k])))
 recalls.K4.glasso = unlist(lapply(res.K4, FUN = function(s) mean(s$mean.recalls.glasso[k])))
+recalls.K4.ebic = unlist(lapply(res.K4.ebic, FUN = function(s) mean(s$mean.recalls.jgl[k])))
+
 
 # Also standard deviations
 precisions.sd.K3 = unlist(lapply(res.K3, FUN = function(s) sd(s$precisions[,k])))
@@ -56,6 +65,8 @@ precisions.sd.K3.ggl = unlist(lapply(res.K3, FUN = function(s) sd(s$precisions.g
 precisions.sd.K3.ssjgl = unlist(lapply(res.K3, FUN = function(s) sd(s$precisions.ssjgl[,k])))
 precisions.sd.K3.jointghs = unlist(lapply(res.K3, FUN = function(s) sd(s$precisions.jointghs[,k])))
 precisions.sd.K3.glasso = unlist(lapply(res.K3, FUN = function(s) sd(s$precisions.glasso[,k])))
+precisions.sd.K3.ebic = unlist(lapply(res.K3.ebic, FUN = function(s) sd(s$precisions.jgl[,k])))
+
 
 recalls.sd.K3 = unlist(lapply(res.K3, FUN = function(s) sd(s$recalls[,k])))
 recalls.sd.K3.jgl = unlist(lapply(res.K3, FUN = function(s) sd(s$recalls.jgl[,k])))
@@ -63,6 +74,7 @@ recalls.sd.K3.ggl = unlist(lapply(res.K3, FUN = function(s) sd(s$recalls.ggl[,k]
 recalls.sd.K3.ssjgl = unlist(lapply(res.K3, FUN = function(s) sd(s$recalls.ssjgl[,k])))
 recalls.sd.K3.jointghs = unlist(lapply(res.K3, FUN = function(s) sd(s$recalls.jointghs[,k])))
 recalls.sd.K3.glasso = unlist(lapply(res.K3, FUN = function(s) sd(s$recalls.glasso[,k])))
+recalls.sd.K3.ebic = unlist(lapply(res.K3.ebic, FUN = function(s) sd(s$recalls.jgl[,k])))
 
 precisions.sd.K4 = unlist(lapply(res.K4, FUN = function(s) sd(s$precisions[,k])))
 precisions.sd.K4.jgl = unlist(lapply(res.K4, FUN = function(s) sd(s$precisions.jgl[,k])))
@@ -70,6 +82,7 @@ precisions.sd.K4.ggl = unlist(lapply(res.K4, FUN = function(s) sd(s$precisions.g
 precisions.sd.K4.ssjgl = unlist(lapply(res.K4, FUN = function(s) sd(s$precisions.ssjgl[,k])))
 precisions.sd.K4.jointghs = unlist(lapply(res.K4, FUN = function(s) sd(s$precisions.jointghs[,k])))
 precisions.sd.K4.glasso = unlist(lapply(res.K4, FUN = function(s) sd(s$precisions.glasso[,k])))
+precisions.sd.K4.ebic = unlist(lapply(res.K4.ebic, FUN = function(s) sd(s$precisions.jgl[,k])))
 
 recalls.sd.K4 = unlist(lapply(res.K4, FUN = function(s) sd(s$recalls[,k])))
 recalls.sd.K4.jgl = unlist(lapply(res.K4, FUN = function(s) sd(s$recalls.jgl[,k])))
@@ -77,6 +90,7 @@ recalls.sd.K4.ggl = unlist(lapply(res.K4, FUN = function(s) sd(s$recalls.ggl[,k]
 recalls.sd.K4.ssjgl = unlist(lapply(res.K4, FUN = function(s) sd(s$recalls.ssjgl[,k])))
 recalls.sd.K4.jointghs = unlist(lapply(res.K4, FUN = function(s) sd(s$recalls.jointghs[,k])))
 recalls.sd.K4.glasso = unlist(lapply(res.K4, FUN = function(s) sd(s$recalls.glasso[,k])))
+recalls.sd.K4.ebic = unlist(lapply(res.K4.ebic, FUN = function(s) sd(s$recalls.jgl[,k])))
 
 #Plotting data frame
 
@@ -90,10 +104,19 @@ df.K.all = data.frame(precision=c(precisions.K3, precisions.K3.jgl,  precisions.
                               recalls.sd.K4, recalls.sd.K4.jgl, recalls.sd.K4.ggl,recalls.sd.K4.ssjgl, recalls.sd.K4.jointghs, recalls.sd.K4.glasso),
                   method = factor(rep(c(rep('stabJGL', n.points),rep('FGL',n.points),rep('GGL',n.points),rep('SSJGL',n.points),
                                         rep('JointGHS',n.points),rep('Glasso',n.points)),2),
-                                  levels = c('FGL', 'GGL','stabJGL','SSJGL','Glasso', 'JointGHS')),
+                                  levels = c('FGL', 'FGL (eBIC)','GGL','stabJGL','SSJGL','Glasso', 'JointGHS')),
                   K = factor(c(rep('K=2', n.points*6), rep('K=4', 6*n.points)),levels=c('K=2','K=4')),
                   disagreement=c(rep(perc.disagreement,12)),similarity=c(rep(perc.similarity,12)))
 
+df.K.ebic = data.frame(precision = c(precisions.K3.ebic, precisions.K4.ebic), 
+                       recall = c(recalls.K3.ebic, recalls.K4.ebic),
+                       sd.prec = c(precisions.sd.K3.ebic, precisions.sd.K4.ebic),
+                       sd.rec = c(recalls.sd.K3.ebic, recalls.sd.K4.ebic),
+                       method=rep('FGL (eBIC)', 2*n.points),
+                       K=factor(c(rep('K=2', n.points), rep('K=4',n.points)),levels=c('K=2','K=4')),
+                       disagreement=c(rep(perc.disagreement,2)),similarity=c(rep(perc.similarity,2)))
+
+#df.K.all = rbind(df.K.all,df.K.ebic)
 
 df.K = df.K.all  %>% filter(method != 'JointGHS')
 
@@ -153,7 +176,7 @@ g.prec.sd.smaller=ggplot2::ggplot(df.K, aes(y=precision, x=similarity, group=met
   geom_errorbar(aes(ymin=precision-sd.prec, ymax=precision+sd.prec),width=2)+theme_bw()+ theme(legend.position='bottom',text = element_text(size = 15))
 
 g.rec.sd.smaller = ggplot2::ggplot(df.K, aes(y=recall, x=similarity, group=method,colour=method))+ labs(title=" ")+theme(plot.title = element_text(hjust = 0.5))+
-  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3', 'plum','brown1','darkkhaki','darkgrey'))+
+  geom_line(aes(colour=method, linetype=method), linewidth=1.2)+ scale_color_manual(values=c('lightskyblue3','plum','brown1','darkkhaki','darkgrey'))+
   labs(x='Similarity %')+ scale_x_continuous(breaks = perc.similarity) + facet_wrap(~K)+ ylim(0,1)+
   geom_errorbar(aes(ymin=recall-sd.rec, ymax=recall+sd.rec),width=2)+ theme_bw()+theme(legend.position = "none",text = element_text(size = 15))
 
@@ -188,5 +211,8 @@ g.prec.sd.smaller = g.prec.sd.smaller + theme(legend.position = "none")
 pdf(file='plots/simstudy_plot_noSSJGL_similarity.pdf',9,7)
 gridExtra::grid.arrange(g.prec.sd.smaller,g.rec.sd.smaller,legend,ncol=1,heights=c(6,6,1))
 dev.off()
+
+
+
 
 

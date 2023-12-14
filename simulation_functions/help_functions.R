@@ -280,6 +280,41 @@ mutate.graph_orig = function(graph,fraction, generate.data=F, scale=T, larger.pa
 }
 
 
+
+JGL_select_eBIC = function(Y,penalty='fused',nlambda1,lambda1.min,lambda1.max,nlambda2,lambda2.min,lambda2.max, 
+                           lambda2.init,penalize.diagonal, ebic.gamma){
+  # JGL with parameters selecetd by adapted eBIC
+  K=length(Y)
+  p=ncol(Y[[1]])
+  n.vals = unlist(lapply(Y,nrow))
+  sample.cov = lapply(Y,cov)
+  lambda1.vals = seq(lambda1.min,lambda1.max,length.out=nlambda1)
+  lambda2.vals = seq(lambda2.min,lambda2.max,length.out=nlambda2)
+  mods.lam1=list()
+  ebic.lam1=rep(0,length(lambda1.vals)) 
+  for (i in 1:length(lambda1.vals)){
+    mod.temp = JGL(Y,penalty=penalty,lambda1=lambda1.vals[i],lambda2 = lambda2.init,return.whole.theta = T,penalize.diagonal=penalize.diagonal)$theta
+    mods.lam1[[i]] = mod.temp
+    ebic.lam1[i] = stabJGL::eBIC_adapted(mod.temp,sample.cov=sample.cov,n.vals=n.vals, gamma=ebic.gamma)
+  }
+  opt.ind.lam1 = which.min(ebic.lam1)
+  lambda1=lambda1.vals[opt.ind.lam1]
+  mods.lam2=list()
+  ebic.lam2=rep(0,length(lambda2.vals))
+  for (i in 1:length(lambda2.vals)){
+    mod.temp = JGL(Y,penalty=penalty,lambda1=lambda1,lambda2 = lambda2.vals[i],penalize.diagonal = penalize.diagonal,
+                   return.whole.theta = T)$theta
+    mods.lam2[[i]] = mod.temp
+    ebic.lam2[i] = stabJGL::eBIC_adapted(mod.temp,sample.cov=sample.cov,n.vals=n.vals, gamma=ebic.gamma)
+  }
+  opt.ind = which.min(ebic.lam2) 
+  res=list(opt.fit=mods.lam2[[opt.ind]],opt.lambda1 = lambda1,opt.lambda2 = lambda2.vals[opt.ind],
+           opt.sparsities = unlist(lapply(mods.lam2[[opt.ind]],sparsity)))
+  return(res)
+}
+
+
+
 JGL_select_AIC = function(Y,penalty='fused',nlambda1,lambda1.min,lambda1.max,nlambda2,lambda2.min,lambda2.max, 
                           lambda2.init,penalize.diagonal){
   # JGL with parameters selecetd by the adapted AIC crierion (Danaher et al.)
@@ -312,6 +347,8 @@ JGL_select_AIC = function(Y,penalty='fused',nlambda1,lambda1.min,lambda1.max,nla
            opt.sparsities = unlist(lapply(mods.lam2[[opt.ind]],sparsity)))
   return(res)
 }
+
+
 
 AIC_adapted = function(theta, sample.cov,n.vals) {
   if(length(theta) != length(sample.cov)) stop('number of precision matrices must be the same as number of covariance matrices')

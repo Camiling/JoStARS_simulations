@@ -1,4 +1,6 @@
 rm(list=ls())
+load("extended_simulations/data/stabJGL_simulations_extended_C_JGLeBIC.Rdata")
+res.K2.ebic = res.K2.2
 load("extended_simulations/data/stabJGL_simulations_extended_thresh_K2.Rdata")
 load("extended_simulations/data/stabJGL_simulations_extended_C.Rdata")
 library(ggplot2)
@@ -28,6 +30,8 @@ precisions.K2.ggl = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.precis
 precisions.K2.ssjgl = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.precisions.ssjgl[k])))
 precisions.K2.jointghs = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.precisions.jointghs[k])))
 precisions.K2.glasso = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.precisions.glasso[k])))
+precisions.K2.ebic = unlist(lapply(res.K2.ebic, FUN = function(s) mean(s$mean.precisions.jgl[k])))
+
 
 recalls.K2 = unlist(lapply(res.K2, FUN = function(s) mean(s[[1]]$mean.recalls[k])))
 recalls.K2.2 = unlist(lapply(res.K2, FUN = function(s) mean(s[[2]]$mean.recalls[k])))
@@ -38,6 +42,7 @@ recalls.K2.ggl = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.recalls.g
 recalls.K2.ssjgl = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.recalls.ssjgl[k])))
 recalls.K2.jointghs = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.recalls.jointghs[k])))
 recalls.K2.glasso = unlist(lapply(res.K2.2, FUN = function(s) mean(s$mean.recalls.glasso[k])))
+recalls.K2.ebic = unlist(lapply(res.K2.ebic, FUN = function(s) mean(s$mean.recalls.jgl[k])))
 
 # Also standard deviations
 precisions.sd.K2 = unlist(lapply(res.K2, FUN = function(s) sd(s[[1]]$precisions[,k],na.rm=T)))
@@ -49,6 +54,8 @@ precisions.sd.K2.ggl = unlist(lapply(res.K2.2, FUN = function(s) sd(s$precisions
 precisions.sd.K2.ssjgl = unlist(lapply(res.K2.2, FUN = function(s) sd(s$precisions.ssjgl[,k],na.rm=T)))
 precisions.sd.K2.jointghs = unlist(lapply(res.K2.2, FUN = function(s) sd(s$precisions.jointghs[,k],na.rm=T)))
 precisions.sd.K2.glasso = unlist(lapply(res.K2.2, FUN = function(s) sd(s$precisions.glasso[,k],na.rm=T)))
+precisions.sd.K2.ebic = unlist(lapply(res.K2.ebic, FUN = function(s) sd(s$precisions.jgl[,k],na.rm=T)))
+
 
 recalls.sd.K2 = unlist(lapply(res.K2, FUN = function(s) sd(s[[1]]$recalls[,k],na.rm=T)))
 recalls.sd.K2.2 = unlist(lapply(res.K2, FUN = function(s) sd(s[[2]]$recalls[,k],na.rm=T)))
@@ -59,6 +66,7 @@ recalls.sd.K2.ggl = unlist(lapply(res.K2.2, FUN = function(s) sd(s$recalls.ggl[,
 recalls.sd.K2.ssjgl = unlist(lapply(res.K2.2, FUN = function(s) sd(s$recalls.ssjgl[,k],na.rm=T)))
 recalls.sd.K2.jointghs = unlist(lapply(res.K2.2, FUN = function(s) sd(s$recalls.jointghs[,k],na.rm=T)))
 recalls.sd.K2.glasso = unlist(lapply(res.K2.2, FUN = function(s) sd(s$recalls.glasso[,k],na.rm=T)))
+recalls.sd.K2.ebic = unlist(lapply(res.K2.ebic, FUN = function(s) sd(s$recalls.jgl[,k],na.rm=T)))
 
 
 #Plotting data frame
@@ -70,7 +78,7 @@ df.K.all = data.frame(precision=c(precisions.K2, precisions.K2.jgl,  precisions.
                       sd.rec = c(recalls.sd.K2, recalls.sd.K2.jgl, recalls.sd.K2.ggl,recalls.sd.K2.ssjgl, recalls.sd.K2.jointghs, recalls.sd.K2.glasso),
                       method = factor(c(rep(paste0('stabJGL ', expression(beta_1 == 0.01 )), n.points),rep('FGL',n.points),rep('GGL',n.points),rep('SSJGL',n.points),
                                             rep('JointGHS',n.points),rep('Glasso',n.points)),
-                                      levels = c('FGL', 'GGL','Glasso', 'SSJGL', paste0('stabJGL ', expression(beta_1 == 0.01 )),'JointGHS')),
+                                      levels = c('FGL','FGL (eBIC)' ,'GGL','Glasso', 'SSJGL', paste0('stabJGL ', expression(beta_1 == 0.01 )),'JointGHS')),
                       disagreement=c(rep(perc.disagreement,6)),similarity=c(rep(perc.similarity,6)))
 
 df.K.otherthresh = data.frame(precision=c(precisions.K2.2, precisions.K2.3,precisions.K2.4),
@@ -81,6 +89,13 @@ df.K.otherthresh = data.frame(precision=c(precisions.K2.2, precisions.K2.3,preci
                                                     rep(paste0('stabJGL ', expression(beta_1 == 0.1 )),n.points),
                                                     rep(paste0('stabJGL ', expression(beta_1 == 0.2 )),n.points))),
                               disagreement=c(rep(perc.disagreement,3)), similarity=c(rep(perc.similarity,3)))
+
+df.K.ebic = data.frame(precision = c(precisions.K2.ebic), 
+                       recall = c(recalls.K2.ebic),
+                       sd.prec = c(precisions.sd.K2.ebic),
+                       sd.rec = c(recalls.sd.K2.ebic),
+                       method=rep('FGL (eBIC)', n.points),
+                       disagreement=perc.disagreement,similarity=perc.similarity)
 
 df.K.full = rbind(df.K.all, df.K.otherthresh)
 df.K = df.K.full  %>% filter(method != 'JointGHS')

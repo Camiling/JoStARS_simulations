@@ -4,7 +4,7 @@
 #' This function performs simulations, assessing time use for stabJGL
 #' 
 #' @return simulation results, including sparsity, precision, recall and specificity
-perform_time_simulation_joint_onlystabJGL = function(p,K,n.vals,nCores=5){
+perform_time_simulation_joint_onlystabJGL = function(p,K,n.vals,nCores=20, nlambda1=20, nlambda2=20){
   n.p = length(p)
   # Create data sets
   data.sets=list()
@@ -30,9 +30,9 @@ perform_time_simulation_joint_onlystabJGL = function(p,K,n.vals,nCores=5){
   # Perform stabJGL
   times.stabJGL = rep(0,n.p)
   for(i in 1:n.p){
-    times.stabJGL[i] = system.time(stabJGL::stabJGL(Y=data.sets[[i]],var.thresh = 0.05,subsample.ratio = NULL,rep.num = 20, nlambda1=20,scale=F,
-                                                    lambda1.min=0.01,lambda1.max=1, nlambda2=20,lambda2.min=0,lambda2.max = 0.1, lambda2.init = 0.01,
-                                                    ebic.gamma=0,verbose=F,penalize.diagonal=FALSE,parallelize = T,nCores=20))['elapsed']
+    times.stabJGL[i] = system.time(stabJGL::stabJGL(Y=data.sets[[i]],var.thresh = 0.05,subsample.ratio = NULL,rep.num = 20, nlambda1=nlambda1,scale=F,
+                                                    lambda1.min=0.01,lambda1.max=1, nlambda2=nlambda2,lambda2.min=0,lambda2.max = 0.1, lambda2.init = 0.01,
+                                                    ebic.gamma=0,verbose=F,penalize.diagonal=FALSE,parallelize = T,nCores=nCores))['elapsed']
     registerDoSEQ()
   }
   return(times.stabJGL)
